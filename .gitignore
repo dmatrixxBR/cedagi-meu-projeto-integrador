@@ -8,6 +8,9 @@ chaves-dev.env
 .venv/
 venv/
 
+# Documentos de rascunho
+docs/
+
 # Dados baixados (data/raw é regenerável pelo scripts/baixar-dados.py;
 # data/amostra e data/fixtures SÃO versionados)
 data/raw/
