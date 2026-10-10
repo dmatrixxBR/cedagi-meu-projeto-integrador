@@ -15,7 +15,7 @@ para qualquer empresa é uma linha genérica — o exemplo do seu segmento
 -->
 
 **Domínio:**  AMS · Assistente de Manutenção Segura
-**Autor(a):** Daniel Barbosa Martins · **Última revisão:** [data]
+**Autor(a):** Daniel Barbosa Martins · **Última revisão:** 2026-10-10
 
 ---
 
@@ -70,21 +70,21 @@ podem ter o indicador geral de falha divergente dos cinco modos registrados, e o
 
 **Actuators:**
 
-Emitir um parecer de risco (baixo/médio/alto) com justificativa textual;
-indicar quais normas são potencialmente aplicáveis à intervenção descrita;
-recomendar (ou não) bloqueio e etiquetagem (LOTO) antes do início do
-serviço; registrar o parecer e sua justificativa para auditoria posterior do
-supervisor; e escalar para inspeção humana — abster-se de decidir — quando a
-leitura for inconsistente ou a confiança estimada for baixa demais para
-justificar uma recomendação.
+- Emitir um parecer de risco (baixo/médio/alto) com justificativa textual;
+- indicar quais normas são potencialmente aplicáveis à intervenção descrita;
+- recomendar (ou não) bloqueio e etiquetagem (LOTO) antes do início do serviço; 
+- registrar o parecer e sua justificativa para auditoria posterior do supervisor; 
+- escalar para inspeção humana — abster-se de decidir — quando a leitura for inconsistente 
+  ou a confiança estimada for baixa demais para justificar uma recomendação.
 
 **Sensors:**
 
-O identificador e o tipo da máquina (L/M/H); a leitura atual dos sensores de
-temperatura do ar, temperatura do processo, rotação, torque e desgaste da
-ferramenta; e a descrição textual da intervenção planejada, escrita pelo
-técnico na ordem de serviço. O agente **não** percebe o rótulo real de
-falha nem os cinco modos (isso é desfecho a ser previsto, não entrada);
+- O identificador e o tipo da máquina (L/M/H); 
+- a leitura atual dos sensores de temperatura do ar, temperatura do processo, rotação, 
+    torque e desgaste da ferramenta; 
+- a descrição textual da intervenção planejada, escrita pelo técnico na ordem de serviço. 
+
+O agente **não** percebe o rótulo real de falha nem os cinco modos (isso é desfecho a ser previsto, não entrada);
 não percebe o histórico de intervenções anteriores da máquina específica;
 não percebe a condição real da equipe; e não lê o texto das
 normas — só sabe seus nomes.
