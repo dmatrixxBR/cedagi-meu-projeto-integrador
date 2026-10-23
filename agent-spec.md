@@ -64,8 +64,9 @@ temperatura do ar e do processo, rotação, torque e desgaste da ferramenta;
 uma ordem de serviço chega com a leitura atual e uma descrição livre da
 intervenção planejada, escrita pelo técnico sob pressão de tempo. O corpus
 normativo (NR-10, NR-12, NR-35 em PDF) existe como referência externa ao
-ambiente operacional. O supervisor de segurança participa como agente
-secundário, auditando o parecer depois. Há ruído e imperfeição reais: leituras
+ambiente operacional. O supervisor de segurança e o técnico agem depois do
+parecer, por um canal separado (fila/log) — fora do escopo e do ciclo de
+decisão do agente. Há ruído e imperfeição reais: leituras
 podem ter o indicador geral de falha divergente dos cinco modos registrados, e o histórico de intervenções anteriores da máquina específica não está disponível no dado atual.
 
 **Actuators:**
@@ -109,8 +110,24 @@ Perguntas que guiam o preenchimento (uma por dimensão):
 -->
 **Quando se preenche:** no Laboratório 02, no sábado (encontro 2).
 
-[uma linha por dimensão: a classificação e a frase de
-justificativa — começando por observabilidade e determinismo]
+| Dimensão | Minha classificação | Justificativa |
+|---|---|---|
+| Observabilidade | Parcialmente observável | O histórico de intervenções da máquina específica, a condição real da equipe e o texto das normas (ainda não lido) mudam a decisão correta, e o agente hoje só enxerga a leitura atual dos sensores e a descrição da ordem. |
+| Número de agentes | Agente único | O escopo do agente é analisar a ordem, classificar o risco e enfileirar o parecer; o técnico e o supervisor agem depois, por um canal separado, sem contestar ou renegociar a classificação durante a avaliação. |
+| Determinismo | Estocástico | A mesma leitura de sensores antecede falha em alguns casos e não em outros, e a chamada ao modelo de linguagem acrescenta variabilidade própria sobre a mesma entrada. |
+| Episódico ou sequencial | Episódico | Cada ordem de serviço é avaliada isoladamente, em lote concorrente, sem o agente lembrar avaliações anteriores da mesma máquina. |
+| Estático ou dinâmico | Semidinâmico | A máquina não muda radicalmente nos segundos da chamada ao modelo, mas o técnico tem pouco tempo entre ordens — uma resposta tardia perde valor mesmo sem o ambiente ter mudado. |
+| Discreto ou contínuo | Contínuo | Temperatura, rotação, torque e desgaste são grandezas físicas reais e contínuas; é o agente que discretiza a saída em categorias fechadas (baixo/médio/alto, bloqueio sim/não), não o ambiente que nasce discreto. |
+| Conhecido ou desconhecido | Desconhecido | Fora do limiar de HDF (8,6 K), os limiares dos demais modos de falha não estão documentados, e o corpus de normas (NR-10/12/35) ainda não é lido pelo agente — ele só conhece os nomes, não as regras. |
+
+**O que a tabela de consequências obriga:** estado interno/memória
+(observabilidade parcial), sem protocolo de comunicação a modelar (agente
+único — técnico e supervisor reagem depois, fora do ciclo de decisão), valor
+esperado com nova tentativa e tempo máximo (estocástico), discretização declarada da escala de risco
+(contínuo), e uma fase de exploração do corpus normativo antes de confiar
+nas regras (desconhecido). Por ser episódico, o projeto
+**não** precisa de planejamento nem avaliação de trajetória inteira — só de
+um conjunto de ordens independentes.
 
 ---
 
@@ -201,7 +218,42 @@ Perguntas que guiam o preenchimento:
     de objetivo, custo de caminho. Comece pelo teste de objetivo.
   - O estado descreve a SITUAÇÃO, não a história de como se chegou nela.
 -->
+— solucao.py:MEU_PROBLEMA
+  1. estado é hashable ✅
+  2. transição é função ✅
+  3. ações estáveis na ordem ✅
+  4. custo é positivo ou zero ✅
+  5. objetivo é alcançável ✅
+  6. estado não guarda o caminho ✅
+  resumo: 6 ✅ · 0 ⚠️ · 0 ❌
+
 **Quando se preenche:** no Laboratório 03, sábado à tarde (encontro 2).
 
-[os cinco componentes do seu subproblema: estado inicial,
-ações, transição, teste de objetivo, custo]
+ Subproblema escolhido (caminho padrão): **ordem das verificações do
+diagnóstico de risco em uma ordem de serviço AMS**.
+
+1. **Estado inicial**
+  Situação sem verificação executada: `(feitas=(), positivas=())`.
+
+2. **Ações**
+  Executar uma verificação ainda não feita.
+  Exemplos do caso AMS: conferir delta de temperatura para HDF, validar
+  desgaste crítico, checar combinação torque/rotação em faixa extrema,
+  conferir manutenção preventiva e ocorrências recentes.
+
+3. **Transição (modelo de transição)**
+  Ao executar uma ação `v`:
+  - `v` entra no conjunto de `feitas`;
+  - se o resultado da verificação no caso for positivo, `v` também entra em
+    `positivas`.
+  O estado é canônico (tuplas ordenadas), então duas trilhas diferentes para
+  a mesma situação produzem o mesmo estado.
+
+4. **Teste de objetivo**
+  Objetivo alcançado quando todas as verificações essenciais do laudo foram
+  realizadas (`essenciais ⊆ feitas`).
+
+5. **Custo de caminho**
+  Soma do tempo das verificações executadas (minutos).
+  Custo de cada ação = tempo da verificação correspondente.
+
