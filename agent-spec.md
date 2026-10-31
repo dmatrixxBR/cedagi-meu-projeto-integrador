@@ -15,7 +15,7 @@ para qualquer empresa é uma linha genérica — o exemplo do seu segmento
 -->
 
 **Domínio:**  AMS · Assistente de Manutenção Segura
-**Autor(a):** Daniel Barbosa Martins · **Última revisão:** 2026-10-10
+**Autor(a):** Daniel Barbosa Martins · **Última revisão:** 2026-10-30
 
 ---
 
@@ -67,7 +67,8 @@ normativo (NR-10, NR-12, NR-35 em PDF) existe como referência externa ao
 ambiente operacional. O supervisor de segurança e o técnico agem depois do
 parecer, por um canal separado (fila/log) — fora do escopo e do ciclo de
 decisão do agente. Há ruído e imperfeição reais: leituras
-podem ter o indicador geral de falha divergente dos cinco modos registrados, e o histórico de intervenções anteriores da máquina específica não está disponível no dado atual.
+podem ter o indicador geral de falha divergente dos cinco modos registrados, 
+e o histórico de intervenções anteriores da máquina específica não está disponível no dado atual.
 
 **Actuators:**
 
@@ -143,8 +144,23 @@ Perguntas que guiam o preenchimento:
 -->
 **Quando se preenche:** no sábado (encontro 2, manhã).
 
-[o tipo mais simples que resolve, justificado pela dimensão
-do ambiente que o obriga]
+**Agente baseado em utilidade, com estado interno (modelo do mundo).**
+
+A observabilidade parcial já elimina o reativo simples: o
+agente precisa lembrar as falhas recentes da família da máquina (é o que
+`EstadoDaFrota` guarda no baseline) para decidir — a mesma leitura de
+sensores, sem esse histórico, não basta. E o determinismo estocástico
+sozinho já aponta para além de um agente baseado em metas: a fórmula de
+desempenho da seção 1 não testa um objetivo binário ("resolveu/não
+resolveu") — ela pondera dois termos que competem (`recallFalha` contra
+`pesoCusto · custoBloqueioIndevido`). Comparar o valor esperado de decisões
+conflitantes é exatamente o papel de uma função de utilidade, não de um
+teste de objetivo.
+
+**O que mudou e por quê (sem devolutiva do E3 até o momento):** não recebi
+ainda a devolutiva do E3; esta seção foi preenchida agora, pela primeira
+vez, com base direta na caracterização da seção 2 — não há mudança a
+registrar porque não havia conteúdo anterior aqui.
 
 ---
 
@@ -163,9 +179,35 @@ Perguntas que guiam o preenchimento:
 operacional completa — primária, secundárias, conjunto e limiar — é item da
 Atividade Orientada.
 
-[métrica primária e duas secundárias, cada uma com: como se
-calcula, sobre qual conjunto, qual o limiar de sucesso e o
-valor de hoje]
+**Conjunto de casos:** `casos-meu-dataset.csv` (pacote `D2-06`) — 30 casos
+derivados do dataset real AI4I2020 (`data/raw/ai4i2020.csv`), com datas
+sintéticas de abril/2026 atribuídas na extração. Distribuição dos rótulos:
+16 `seguir_operando`, 7 `inspecionar_antes_de_operar`, 7
+`parar_para_manutencao` — 14 casos são falha real (`falhou_depois=1`).
+
+**Métrica primária — `recallFalha`:** (falhas reais classificadas como
+risco médio ou alto, ou seja, decisão ≠ `seguir_operando`) ÷ (total de
+falhas reais no lote). Limiar de sucesso: `≥ 0,90` (seção 1). **Valor de
+hoje: 10/14 = 0,7143 — abaixo do limiar.** O baseline erra 4 das 14
+falhas reais por completo (M17, M18, M19, M21), classificando-as como
+`seguir_operando`.
+
+**Secundária 1 — `custoBloqueioIndevido`:** (ordens sem falha real em que
+o agente recomendou `parar_para_manutencao`) ÷ (total de ordens sem falha
+real). **Valor de hoje: 2/16 = 0,125** (casos M01, M02).
+
+**Secundária 2 — taxa de subescalonamento:** (falhas reais que exigiam
+`parar_para_manutencao` mas foram decididas como `inspecionar_antes_de_operar`)
+÷ (total de falhas que exigiam parar). **Valor de hoje: 5/7 = 0,7143**
+(M24, M26, M27, M29, M30) — a secundária que a primária sozinha não vê: o
+baseline até reconhece risco nesses casos, só erra o grau.
+
+**Desempenho agregado (fórmula da seção 1, `pesoCusto = 2`):**
+`0,7143 − 2 · 0,125 = 0,4643`.
+
+**O que mudou e por quê (sem devolutiva do E3 até o momento):** seção
+preenchida agora pela primeira vez, com a medição real do Lab 06 sobre o
+meu próprio conjunto de dados — não havia conteúdo anterior para comparar.
 
 ---
 
@@ -182,9 +224,35 @@ Perguntas que guiam o preenchimento:
 -->
 **Quando se preenche:** na Atividade Orientada.
 
-[latência aceitável, custo aceitável, o que o agente jamais
-pode fazer sozinho, e a troca qualidade × custo que você
-aceita — com um exemplo numérico]
+*(O domínio — `dominio.md` — ainda não documenta um SLA formal de
+latência/custo; os dois primeiros valores abaixo são premissas minhas,
+assumidas explicitamente, até existir um número oficial do curso.)*
+
+**Latência aceitável:** até 5 segundos por parecer. O técnico aguarda a
+resposta na própria ordem de serviço antes de iniciar a intervenção — uma
+resposta mais lenta que isso perde valor porque o trabalho fica parado no
+chão de fábrica.
+
+**Custo aceitável:** o custo da chamada ao modelo por ordem deve ficar bem
+abaixo do custo de uma inspeção humana desnecessária — a ordem de grandeza
+que guia o projeto, não um valor em R$ ainda medido.
+
+**O que o agente jamais pode fazer sozinho:** executar fisicamente o
+bloqueio e a etiquetagem (LOTO) da máquina (mesma restrição da seção 6) —
+ele recomenda e registra, mas quem interrompe a operação é sempre o
+técnico ou o supervisor.
+
+**A troca que eu aceito (exemplo numérico):** subir `recallFalha` de 0,7143
+para 0,90 relaxando o limiar de bloqueio deixaria `custoBloqueioIndevido`
+subir de 0,125 para, digamos, 0,30. Com `pesoCusto = 2`, o desempenho
+agregado cairia de `0,4643` (hoje) para `0,90 − 2·0,30 = 0,30` — pior do
+que hoje. Ou seja: a fórmula já me impede de "comprar" recall só ficando
+mais conservador; a melhoria real (D10) precisa vir de mais sinal (ex.:
+histórico de manutenção), não de baixar a régua de bloqueio.
+
+**O que mudou e por quê (sem devolutiva do E3 até o momento):** seção
+preenchida agora pela primeira vez; os valores de latência/custo são
+premissas explícitas, marcadas como tal, até haver um SLA documentado.
 
 ---
 
@@ -203,8 +271,27 @@ Perguntas que guiam o preenchimento:
 **Quando se preenche:** na Atividade Orientada — o pacote `D2-07` traz o
 modelo da tabela e dois exemplos preenchidos.
 
-[tabela: nome · entrada · saída · é reversível? · risco se
-errar — ações de leitura e de escrita]
+Catálogo completo (com os comentários de reversibilidade e risco) em
+`docsdisciplinas/D2-07-catalogo-de-acoes/catalogo-de-acoes-modelo.md`.
+
+| Ação | Entrada | Saída | É reversível? | Risco se errar |
+|---|---|---|---|---|
+| Ler a ordem de serviço | Identificador da máquina (Product ID, tipo L/M/H) | Leituras de temperatura do ar/processo, rotação, torque, desgaste + descrição textual da intervenção | Sim — só lê | Campo ausente ou leitura truncada leva o parecer a se apoiar em base incompleta |
+| Executar uma verificação de risco (delta de temperatura para HDF, desgaste crítico, torque/rotação em faixa extrema, manutenção preventiva, ocorrências recentes) | Leituras da ordem + verificações já feitas (`feitas`, `positivas`) | Resultado positivo/negativo da verificação + estado atualizado | Sim — só computa | Falso negativo numa verificação crítica (ex.: HDF) deixa passar o modo de falha; falso positivo infla o risco sem motivo |
+| Consultar o catálogo de normas potencialmente aplicáveis | Descrição da intervenção planejada | Lista de normas (NR-10/NR-12/NR-35) possivelmente aplicáveis, só pelos nomes | Sim — só lê | Norma relevante ausente na lista deixa o técnico sem o alerta de exigência de segurança |
+| Classificar o risco e redigir o parecer | Resultado das verificações essenciais + normas indicadas | Parecer de risco (baixo/médio/alto) com justificativa textual | Sim — é rascunho antes de registrar | Falso negativo (classificar baixo quando é alto) é o erro mais caro do domínio; falso positivo custa bloqueio indevido |
+| **Recomendar bloqueio e etiquetagem (LOTO)** | Parecer classificado como risco médio/alto | Recomendação de bloqueio enviada ao técnico/supervisor | Parcialmente — a recomendação pode ser retificada, mas se o bloqueio físico já foi iniciado a parada de produção não se desfaz sem custo | Comunicação: recomendar bloqueio indevido para quem não precisa custa produção parada; deixar de recomendar quando necessário expõe o técnico a risco físico real |
+| Registrar o parecer e a justificativa para auditoria | Parecer final + normas indicadas + recomendação de bloqueio | Registro no log de auditoria do supervisor | Não — corrigir exige novo registro de retificação; o registro original permanece | Escrita: registro incorreto compromete a rastreabilidade exigida numa inspeção futura |
+| **Escalar para inspeção humana (abster-se de decidir)** | Leitura inconsistente ou confiança estimada abaixo do limiar | Ordem encaminhada à fila do supervisor, sem parecer automático | Sim — a escalada pode ser revista se chegar nova leitura | Comunicação: escalar demais gera fadiga no supervisor (fila ignorada); escalar de menos deixa um caso de alto risco sem checagem humana |
+
+**Quem executa cada ação:** ler, verificar, consultar normas, classificar e
+registrar são do agente sozinho. Recomendar o bloqueio/LOTO é decisão do
+agente, mas a execução física é sempre do técnico/supervisor. Escalar é o
+agente que decide se abstém — a inspeção em si é só humana.
+
+**O que o agente JAMAIS executa sozinho:** executar fisicamente o bloqueio e
+a etiquetagem (LOTO) da máquina — o agente recomenda e registra, mas quem
+interrompe a operação é sempre o técnico ou o supervisor.
 
 ---
 
