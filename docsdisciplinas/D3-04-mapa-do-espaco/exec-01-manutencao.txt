@@ -1,0 +1,13 @@
+== Laboratório 04 — o mapa do meu domínio
+conjunto: manutencao · 200 frases · 384 dimensões · normalizado (slide 55)
+métodos: componentes principais (determinístico) · vizinhança (t-SNE, semente 20260901 — declarada na figura)
+mapas: mapa-do-espaco.png (índices anotados) · pontos: mapa-pontos.csv
+
+próximo passo: escolha no mapa três pares de pontos VIZINHOS e confira (o passo 4 do slide 52), por exemplo:
+  python esqueleto.py manutencao --pares 4,9 22,77 150,181
+
+conferência: pares-conferidos.md — anote nele as quatro respostas do slide 53 e o caso em que o mapa enganou, e rode python -m pytest teste.py -q
+
+pendências do critério do slide 52:
+  - os três pares do passo 4 ainda não foram conferidos — rode com --pares (ex.: --pares 4,9 22,77 150,181)
+  - faltam respostas no pares-conferidos.md (0 de 4: as quatro perguntas do slide 53)
